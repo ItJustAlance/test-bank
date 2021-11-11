@@ -3,18 +3,18 @@
     <div class="container">
       <div class="list-data">
         <div class="search">
-          <input type="text" class="input" v-model="inputSearch" placeholder="Поиск">
-          <div v-show="inputSearch" @click="inputSearch = ''" class="btn-clear"></div>
+          <div class="search__input"><input type="text" class="input" v-model="inputSearch" placeholder="Поиск"></div>
+          <div v-show="inputSearch" @click="inputSearch = ''" class="btn-clear">очистить</div>
         </div>
-        <div class="row-item" v-for="item in listUsersPhones" :key="item.id">
+        <div class="row-item" v-for="item in listUsersResult" :key="item.id">
           <toggle-item :item="item">
           </toggle-item>
         </div>
       </div><!--end list-data -->
-      {{pages}}
       <ol class="pagination">
-        <li v-for="(pageNumber, index) in pages" :key="index"><button type="button" class="btn btn-sm btn-outline-secondary"  @click="getUsers(pageNumber)"> {{pageNumber}} </button></li>
+        <li v-for="(pageNumber, index) in pages" :key="index"><button :class="{active : page === pageNumber}" type="button" class="btn btn-sm btn-outline-secondary"  @click="getUsers(pageNumber)"> {{pageNumber}} </button></li>
       </ol>
+
     </div>
   </div>
 </template>
@@ -43,12 +43,15 @@ export default {
   computed:{
     // eslint-disable-next-line vue/return-in-computed-property
     listUsersPhones(){
+        return this.listUsers.map(name => ({...name, phone: this.phoneGenerator()}));
+    },
+    listUsersResult(){
       const inpSearch = this.inputSearch.toLowerCase();
       if (inpSearch === '' || !inpSearch) {
-       return this.paginate(this.listUsers.map(name => ({...name, phone: this.phoneGenerator()})));
+        return this.listUsersPhones;
       }else {
-        return this.listUsers.filter((inp) =>
-          inp.first_name.toLowerCase().includes(inpSearch)
+        return this.listUsersPhones.filter((inp) =>
+            inp.first_name.toLowerCase().includes(inpSearch)
         )
       }
     },
@@ -63,20 +66,21 @@ export default {
   },
   mounted() {
     window.setInterval(() => {
-      this.getUsers()
-    }, 60000)
+      this.getUsers(this.page)
+    }, 6000)
     },
   methods: {
     phoneGenerator(){
       let phoneNums = Math.random().toString().slice(2,11);
       return phoneNums.slice(0,3)+"-"+phoneNums.slice(3,6)+"-"+phoneNums.slice(6);
     },
-    async getUsers(page){
+    async getUsers(page = 1){
       try {
       console.log('запрос к api каждую минуту')
-      const {data: { data: listUsers }, total: totalPage } = await axios.get('https://reqres.in/api/users?page='+page+'&per_page='+this.perPage);
-        this.listUsers = listUsers;
-        this.totalPage = totalPage;
+      this.page = page;
+      const {data: { total: totalResponse, data: usersData } } = await axios.get('https://reqres.in/api/users?page='+page+'&per_page='+this.perPage);
+        this.listUsers = usersData;
+        this.totalPage = totalResponse;
       } catch (error) {
         console.log(error);
       }
@@ -87,13 +91,6 @@ export default {
       for (let index = 1; index <= numberOfPages; index++) {
         this.pages.push(index);
       }
-    },
-    paginate (listUsersPhones) {
-      let page = this.page;
-      let perPage = this.perPage;
-      let from = (page * perPage) - perPage;
-      let to = (page * perPage);
-      return  listUsersPhones.slice(from, to);
     },
 
   }
@@ -108,6 +105,10 @@ export default {
   color: #2c3e50;
   margin-top: 60px;
 }
+.search { position: relative; display: flex;margin-bottom: 30px;}
+.search__input {flex: 1 1 auto;margin-right: 10px;}
+.search__input input {width: 100%;}
+.btn-clear { background: #333; border-radius: 4px; padding:1px 10px;color: #fff;}
 .row-item {
   border: 1px solid #888;
   padding: 5px;
@@ -119,4 +120,5 @@ export default {
   padding-bottom: 5px;
   cursor: pointer;
 }
+.pagination li {margin-right: 10px;}
 </style>

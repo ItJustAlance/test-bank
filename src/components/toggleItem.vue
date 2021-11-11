@@ -7,6 +7,7 @@
         <div class="col-1"><img :src="item.avatar" width="60" alt=""></div>
         <div class="col-3">{{ item.email }}</div>
         <div class="col-3">{{ item.first_name }}</div>
+        <div class="col-3">{{ item.phone }}</div>
       </div>
     </div>
   </div>
